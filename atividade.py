@@ -2,132 +2,120 @@ import flet as ft
 
 
 def main(page: ft.Page):
+
     page.title = "PizzaDev"
 
-    
     titulo = ft.Text(
         "PizzaDev",
         size=40,
         weight=ft.FontWeight.BOLD
     )
 
-    slogan = ft.Text(
-        "Mais pizza e menos guerra!",
-        size=32,
+    pizza = ft.Text(
+        "Pizza Calabresa",
+        size=30,
         weight=ft.FontWeight.BOLD
     )
 
-    orientacao = ft.Text("Para pedir, peça!")
+    descricao = ft.Text(
+        "Calabresa, cebola e muçarela"
+    )
 
-    dupla = ft.Text("Dupla é SAMUEL")
+    preco = ft.Text(
+        "M = R$ 32,00 | G = R$ 42,00"
+    )
 
-    dados = ft.Text(
-        "Dados temporários durante execução",
-        size=30
+   
+    quantidade = ft.TextField(
+        label="Quantidade",
+        hint_text="Digite de 1 a 10",
+        width=300
     )
 
     
+    tamanho = ft.RadioGroup(
+        content=ft.Row([
+            ft.Radio(value="M", label="M - R$ 32,00"),
+            ft.Radio(value="G", label="G - R$ 42,00"),
+        ])
+    )
+
     mensagem = ft.Text(
-        "Nenhuma pizza selecionada.",
+        "",
+        size=20,
+        weight=ft.FontWeight.BOLD
+    )
+
+    resultado = ft.Text(
+        "",
         size=25,
         weight=ft.FontWeight.BOLD
     )
 
     
+    def calcular(e):
 
-    def selecionar_pizza(nome, preco_m):
+        valor = quantidade.value.strip()
 
-        def selecionar(e):
-            mensagem.value = f"Selecionada: {nome} | Preço M: R$ {preco_m:.2f}"
+        
+        if valor == "":
+            mensagem.value = "Digite uma quantidade."
+            resultado.value = ""
             page.update()
+            return
 
-        return selecionar
+        
+        if not valor.isdigit():
+            mensagem.value = "A quantidade deve ser um número."
+            resultado.value = ""
+            page.update()
+            return
 
-    
+        quantidade_num = int(valor)
 
-    def criar_card(nome, descricao, preco_p, preco_m):
+        
+        if quantidade_num < 1 or quantidade_num > 10:
+            mensagem.value = "A quantidade deve estar entre 1 e 10."
+            resultado.value = ""
+            page.update()
+            return
 
-        botao = ft.Button(
-            content=f"Escolher {nome}",
-            on_click=selecionar_pizza(nome, preco_m)
-        )
+        
+        if tamanho.value == "M":
+            preco_unitario = 32
 
-        card = ft.Container(
-            padding=15,
-            border_radius=12,
-            content=ft.Column([
-                ft.Text(
-                    nome,
-                    size=20,
-                    weight=ft.FontWeight.BOLD
-                ),
+        elif tamanho.value == "G":
+            preco_unitario = 42
 
-                ft.Text(descricao),
+        else:
+            mensagem.value = "Escolha o tamanho M ou G."
+            resultado.value = ""
+            page.update()
+            return
 
-                ft.Row([
-                    ft.Text(f"P: R$ {preco_p:.2f}"),
-                    ft.Text(f"M: R$ {preco_m:.2f}")
-                ]),
+        
+        total = quantidade_num * preco_unitario
 
-                botao
-            ])
-        )
+        mensagem.value = "Pedido calculado!"
+        resultado.value = f"Parcial: R$ {total:.2f}"
 
-        return card
-
-   
-
-    def limpar_selecao(e):
-        mensagem.value = "Nenhuma pizza selecionada."
         page.update()
 
-    limpar = ft.Button(
-        content="Limpar seleção",
-        on_click=limpar_selecao
+    calcular_button = ft.Button(
+        content="Calcular",
+        on_click=calcular
     )
-
-    
-
-    card_calabresa = criar_card(
-        "Calabresa",
-        "Calabresa, cebola e muçarela",
-        30,
-        40
-    )
-
-    card_mussarela = criar_card(
-        "Muçarela",
-        "Muçarela, tomate e orégano",
-        28,
-        38
-    )
-
-    card_frango = criar_card(
-        "Frango com Catupiry",
-        "Frango, catupiry e muçarela",
-        35,
-        45
-    )
-
-  
 
     page.add(
         titulo,
-        slogan,
-        orientacao,
-        dupla,
-        dados,
+        pizza,
+        descricao,
+        preco,
+        quantidade,
+        tamanho,
+        calcular_button,
         mensagem,
-
-        ft.Column(
-            [
-                card_calabresa,
-                card_mussarela,
-                card_frango,
-                limpar
-            ],
-            scroll=ft.ScrollMode.AUTO
-        )
+        resultado
     )
 
 
