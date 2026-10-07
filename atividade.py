@@ -82,10 +82,24 @@ def main(page: ft.Page):
         weight=ft.FontWeight.BOLD
     )
 
+    carrinho = [
+        {
+            "nome": "Calabresa",
+            "tamanho": "M",
+            "quantidade": 1,
+            "preco": 32
+        },
+        {
+            "nome": "Pepperoni",
+            "tamanho": "G",
+            "quantidade": 2,
+            "preco": 42
+        }
+    ]
+
     estado = {
         "pizza": None,
-        "tamanho": None,
-        "pedidos": []
+        "tamanho": None
     }
 
     mensagem = ft.Text(
@@ -105,20 +119,79 @@ def main(page: ft.Page):
         expand=True
     )
 
+    lista_carrinho = ft.ListView(
+        expand=True,
+        spacing=10,
+        auto_scroll=False
+    )
+
+    subtotal_carrinho = ft.Text(
+        "Subtotal: R$ 0.00",
+        size=22,
+        weight=ft.FontWeight.BOLD
+    )
+
+    def atualizar_carrinho(e=None):
+        lista_carrinho.controls.clear()
+        subtotal = 0
+
+        for item in carrinho:
+            parcial = item["quantidade"] * item["preco"]
+            subtotal += parcial
+
+            lista_carrinho.controls.append(
+                ft.Card(
+                    content=ft.Container(
+                        content=ft.Column([
+                            ft.Text(
+                                item["nome"],
+                                size=22,
+                                weight=ft.FontWeight.BOLD
+                            ),
+                            ft.Text(
+                                f"Tamanho: {item['tamanho']}"
+                            ),
+                            ft.Text(
+                                f"Quantidade: {item['quantidade']}"
+                            ),
+                            ft.Text(
+                                f"Preço: R$ {item['preco']:.2f}"
+                            ),
+                            ft.Text(
+                                f"Parcial: R$ {parcial:.2f}",
+                                size=18,
+                                weight=ft.FontWeight.BOLD
+                            )
+                        ]),
+                        padding=15
+                    )
+                )
+            )
+
+        subtotal_carrinho.value = f"Subtotal: R$ {subtotal:.2f}"
+        page.update()
+
+    def buscar_pizza(nome):
+        for pizza in pizzas:
+            if pizza["sabor"] == nome:
+                return pizza
+        return None
+
     def selecionar_pizza(pizza, status):
         estado["pizza"] = pizza["sabor"]
 
-        for pedido in estado["pedidos"]:
-            if pedido["pizza"]["sabor"] == pizza["sabor"]:
+        for item in carrinho:
+            if item["nome"] == pizza["sabor"]:
                 status.value = "✓ Já selecionada"
                 mensagem.value = f"{pizza['sabor']} já está no pedido."
                 page.update()
                 return
 
-        estado["pedidos"].append({
-            "pizza": pizza,
+        carrinho.append({
+            "nome": pizza["sabor"],
+            "tamanho": "M",
             "quantidade": 1,
-            "tamanho": "M"
+            "preco": pizza["preços"]["M"]
         })
 
         estado["tamanho"] = "M"
@@ -126,7 +199,7 @@ def main(page: ft.Page):
         status.value = "✓ Selecionada"
         mensagem.value = f"{pizza['sabor']} adicionada ao pedido."
 
-        page.update()
+        atualizar_carrinho()
 
     for pizza in pizzas:
         lista_pizzas.controls.append(
@@ -151,6 +224,10 @@ def main(page: ft.Page):
                 ft.Button(
                     content="Ver Cardápio",
                     on_click=mostrar_cardapio
+                ),
+                ft.Button(
+                    content="Ver Carrinho",
+                    on_click=mostrar_carrinho
                 )
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -180,6 +257,10 @@ def main(page: ft.Page):
                     on_click=mostrar_inicio
                 ),
                 ft.Button(
+                    content="Carrinho",
+                    on_click=mostrar_carrinho
+                ),
+                ft.Button(
                     content="Avançar",
                     on_click=mostrar_selecao
                 )
@@ -190,9 +271,9 @@ def main(page: ft.Page):
 
         page.update()
 
-    def calcular(e):
+    def calcular(e=None):
 
-        if not estado["pedidos"]:
+        if not carrinho:
             mensagem.value = "Selecione pelo menos uma pizza."
             resultado.value = ""
             page.update()
@@ -201,21 +282,21 @@ def main(page: ft.Page):
         subtotal = 0
         detalhes = []
 
-        for pedido in estado["pedidos"]:
-
-            pizza = pedido["pizza"]
-            quantidade = pedido["quantidade"]
-            tamanho = pedido["tamanho"]
+        for item in carrinho:
+            nome = item["nome"]
+            quantidade = item["quantidade"]
+            tamanho = item["tamanho"]
+            preco = item["preco"]
 
             if not isinstance(quantidade, int):
-                mensagem.value = f"Quantidade inválida para {pizza['sabor']}."
+                mensagem.value = f"Quantidade inválida para {nome}."
                 resultado.value = ""
                 page.update()
                 return
 
             if quantidade < 1 or quantidade > 10:
                 mensagem.value = (
-                    f"A quantidade da {pizza['sabor']} "
+                    f"A quantidade da {nome} "
                     "deve estar entre 1 e 10."
                 )
                 resultado.value = ""
@@ -224,19 +305,18 @@ def main(page: ft.Page):
 
             if tamanho not in ("M", "G"):
                 mensagem.value = (
-                    f"Escolha o tamanho da {pizza['sabor']}."
+                    f"Escolha o tamanho da {nome}."
                 )
                 resultado.value = ""
                 page.update()
                 return
 
-            preco = pizza["preços"][tamanho]
             total_pizza = quantidade * preco
 
             subtotal += total_pizza
 
             detalhes.append(
-                f"{pizza['sabor']} - "
+                f"{nome} - "
                 f"{quantidade}x {tamanho} - "
                 f"R$ {total_pizza:.2f}"
             )
@@ -261,7 +341,7 @@ def main(page: ft.Page):
             + f"Total: R$ {total:.2f}"
         )
 
-        page.update()
+        atualizar_carrinho()
 
     def mostrar_selecao(e=None):
 
@@ -270,7 +350,7 @@ def main(page: ft.Page):
             expand=True
         )
 
-        if not estado["pedidos"]:
+        if not carrinho:
             lista_selecao.controls.append(
                 ft.Text(
                     "Nenhuma pizza selecionada.",
@@ -279,19 +359,19 @@ def main(page: ft.Page):
                 )
             )
 
-        for pedido in estado["pedidos"]:
+        for item in carrinho:
 
-            pizza = pedido["pizza"]
+            pizza = buscar_pizza(item["nome"])
 
             quantidade = ft.TextField(
                 label="Quantidade",
-                value=str(pedido["quantidade"]),
+                value=str(item["quantidade"]),
                 width=150,
                 keyboard_type=ft.KeyboardType.NUMBER
             )
 
             tamanho = ft.RadioGroup(
-                value=pedido["tamanho"],
+                value=item["tamanho"],
                 content=ft.Row([
                     ft.Radio(
                         value="M",
@@ -304,18 +384,21 @@ def main(page: ft.Page):
                 ])
             )
 
-            def alterar_quantidade(e, pedido=pedido):
+            def alterar_quantidade(e, item=item):
                 valor = e.control.value.strip()
 
                 if valor == "":
                     return
 
                 if valor.isdigit():
-                    pedido["quantidade"] = int(valor)
+                    item["quantidade"] = int(valor)
+                    atualizar_carrinho()
 
-            def alterar_tamanho(e, pedido=pedido):
-                pedido["tamanho"] = e.control.value
+            def alterar_tamanho(e, item=item, pizza=pizza):
+                item["tamanho"] = e.control.value
+                item["preco"] = pizza["preços"][e.control.value]
                 estado["tamanho"] = e.control.value
+                atualizar_carrinho()
 
             quantidade.on_change = alterar_quantidade
             tamanho.on_change = alterar_tamanho
@@ -325,7 +408,7 @@ def main(page: ft.Page):
                     content=ft.Container(
                         content=ft.Column([
                             ft.Text(
-                                f"✓ {pizza['sabor']}",
+                                f"✓ {item['nome']}",
                                 size=24,
                                 weight=ft.FontWeight.BOLD
                             ),
@@ -352,6 +435,8 @@ def main(page: ft.Page):
                 size=18
             )
 
+        atualizar_carrinho()
+
         area_central.content = ft.Column([
             ft.Text(
                 "Seleção",
@@ -369,6 +454,46 @@ def main(page: ft.Page):
                 ),
                 ft.Button(
                     content="Calcular",
+                    on_click=calcular
+                ),
+                ft.Button(
+                    content="Carrinho",
+                    on_click=mostrar_carrinho
+                ),
+                ft.Button(
+                    content="Início",
+                    on_click=mostrar_inicio
+                )
+            ],
+            alignment=ft.MainAxisAlignment.CENTER)
+        ],
+        expand=True)
+
+        page.update()
+
+    def mostrar_carrinho(e=None):
+        atualizar_carrinho()
+
+        area_central.content = ft.Column([
+            ft.Text(
+                "Carrinho",
+                size=30,
+                weight=ft.FontWeight.BOLD
+            ),
+            lista_carrinho,
+            subtotal_carrinho,
+            mensagem,
+            ft.Row([
+                ft.Button(
+                    content="Voltar",
+                    on_click=mostrar_cardapio
+                ),
+                ft.Button(
+                    content="Atualizar Carrinho",
+                    on_click=atualizar_carrinho
+                ),
+                ft.Button(
+                    content="Calcular Pedido",
                     on_click=calcular
                 ),
                 ft.Button(
@@ -393,6 +518,7 @@ def main(page: ft.Page):
         area_central
     )
 
+    atualizar_carrinho()
     mostrar_inicio()
 
 
