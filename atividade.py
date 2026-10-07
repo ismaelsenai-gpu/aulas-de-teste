@@ -105,13 +105,58 @@ def main(page: ft.Page):
 
     estado = {
         "pizza": None,
-        "tamanho": None
+        "tamanho": None,
+        "entrega": None,
+        "taxa_entrega": 0
     }
 
     mensagem = ft.Text(
         "",
         size=20,
         weight=ft.FontWeight.BOLD
+    )
+
+    nome = ft.TextField(
+        label="Nome"
+    )
+
+    telefone = ft.TextField(
+        label="Telefone",
+        keyboard_type=ft.KeyboardType.NUMBER
+    )
+
+    tipo_entrega = ft.RadioGroup(
+        value="retirada",
+        content=ft.Row([
+            ft.Radio(
+                value="retirada",
+                label="Retirada"
+            ),
+            ft.Radio(
+                value="entrega",
+                label="Entrega"
+            )
+        ])
+    )
+
+    rua = ft.TextField(
+        label="Rua",
+        visible=False
+    )
+
+    numero = ft.TextField(
+        label="Número",
+        visible=False
+    )
+
+    bairro = ft.TextField(
+        label="Bairro",
+        visible=False
+    )
+
+    complemento = ft.TextField(
+        label="Complemento",
+        visible=False
     )
 
     resultado = ft.Text(
@@ -334,11 +379,48 @@ def main(page: ft.Page):
 
         atualizar_carrinho()
 
+    def atualizar_tipo_entrega(e=None):
+        entrega = tipo_entrega.value == "entrega"
+
+        rua.visible = entrega
+        numero.visible = entrega
+        bairro.visible = entrega
+        complemento.visible = entrega
+        estado["entrega"] = tipo_entrega.value
+        estado["taxa_entrega"] = 6 if entrega else 0
+
+    tipo_entrega.on_change = atualizar_tipo_entrega
+
+    def validar_dados():
+        nome_cliente = nome.value.strip()
+        telefone_cliente = "".join(c for c in telefone.value if c.isdigit())
+
+        if nome_cliente == "":
+            mensagem.value = "Informe o nome."
+            resultado.value = ""
+            return False
+
+        if len(telefone_cliente) not in (10, 11):
+            mensagem.value = "O telefone deve ter 10 ou 11 dígitos."
+            resultado.value = ""
+            return False
+
+        if tipo_entrega.value == "entrega" and rua.value.strip() == "":
+            mensagem.value = "Informe a rua para realizar a entrega."
+            resultado.value = ""
+            return False
+
+        return True
+
     def calcular(e=None):
 
         if not carrinho:
             mensagem.value = "Selecione pelo menos uma pizza."
             resultado.value = ""
+            page.update()
+            return
+
+        if not validar_dados():
             page.update()
             return
 
@@ -384,12 +466,9 @@ def main(page: ft.Page):
                 f"R$ {total_pizza:.2f}"
             )
 
-        if subtotal >= 100:
-            desconto = subtotal * 0.05
-            frete = 0
-        else:
-            desconto = 0
-            frete = 10
+        desconto = 0
+        frete = 6 if tipo_entrega.value == "entrega" else 0
+        estado["taxa_entrega"] = frete
 
         total = subtotal - desconto + frete
 
@@ -499,6 +578,7 @@ def main(page: ft.Page):
             )
 
         atualizar_carrinho()
+        atualizar_tipo_entrega()
 
         area_central.content = ft.Column([
             ft.Text(
@@ -506,6 +586,17 @@ def main(page: ft.Page):
                 size=30,
                 weight=ft.FontWeight.BOLD
             ),
+            nome,
+            telefone,
+            tipo_entrega,
+            ft.Row([
+                rua,
+                numero
+            ]),
+            ft.Row([
+                bairro,
+                complemento
+            ]),
             pizza_guardada,
             lista_selecao,
             mensagem,
@@ -516,7 +607,7 @@ def main(page: ft.Page):
                     on_click=mostrar_cardapio
                 ),
                 ft.Button(
-                    content="Calcular",
+                    content="Avançar",
                     on_click=calcular
                 ),
                 ft.Button(
