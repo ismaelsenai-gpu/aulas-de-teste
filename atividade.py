@@ -94,6 +94,12 @@ def main(page: ft.Page):
             "tamanho": "G",
             "quantidade": 2,
             "preco": 42
+        },
+        {
+            "nome": "Muçarela",
+            "tamanho": "M",
+            "quantidade": 1,
+            "preco": 32
         }
     ]
 
@@ -131,6 +137,18 @@ def main(page: ft.Page):
         weight=ft.FontWeight.BOLD
     )
 
+    botao_avancar = ft.Button(
+        content="Avançar",
+        disabled=not carrinho
+    )
+
+    def mostrar_snackbar(texto):
+        page.show_dialog(
+            ft.SnackBar(
+                content=ft.Text(texto)
+            )
+        )
+
     def atualizar_carrinho(e=None):
         lista_carrinho.controls.clear()
         subtotal = 0
@@ -161,6 +179,10 @@ def main(page: ft.Page):
                                 f"Parcial: R$ {parcial:.2f}",
                                 size=18,
                                 weight=ft.FontWeight.BOLD
+                            ),
+                            ft.Button(
+                                content="Remover",
+                                on_click=lambda e, item=item: remover_item(item)
                             )
                         ]),
                         padding=15
@@ -169,6 +191,7 @@ def main(page: ft.Page):
             )
 
         subtotal_carrinho.value = f"Subtotal: R$ {subtotal:.2f}"
+        botao_avancar.disabled = not carrinho
         page.update()
 
     def buscar_pizza(nome):
@@ -176,6 +199,47 @@ def main(page: ft.Page):
             if pizza["sabor"] == nome:
                 return pizza
         return None
+
+    def remover_item(item):
+        nome = item["nome"]
+        carrinho.remove(item)
+
+        if estado["pizza"] == nome:
+            estado["pizza"] = None
+
+        atualizar_carrinho()
+        mostrar_snackbar(f"{nome} removida do carrinho.")
+
+    def confirmar_limpeza(e):
+        carrinho.clear()
+        estado["pizza"] = None
+        estado["tamanho"] = None
+        page.pop_dialog()
+        atualizar_carrinho()
+        mostrar_snackbar("Carrinho limpo.")
+
+    def cancelar_limpeza(e):
+        page.pop_dialog()
+
+    def limpar_carrinho(e):
+        dialogo = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Limpar carrinho"),
+            content=ft.Text("Deseja realmente limpar o carrinho?"),
+            actions=[
+                ft.TextButton(
+                    "Cancelar",
+                    on_click=cancelar_limpeza
+                ),
+                ft.TextButton(
+                    "Confirmar",
+                    on_click=confirmar_limpeza
+                )
+            ],
+            actions_alignment=ft.MainAxisAlignment.END
+        )
+
+        page.show_dialog(dialogo)
 
     def selecionar_pizza(pizza, status):
         estado["pizza"] = pizza["sabor"]
@@ -240,6 +304,8 @@ def main(page: ft.Page):
         page.update()
 
     def mostrar_cardapio(e=None):
+        botao_avancar.on_click = mostrar_selecao
+
         area_central.content = ft.Column([
             ft.Text(
                 "Cardápio",
@@ -260,16 +326,13 @@ def main(page: ft.Page):
                     content="Carrinho",
                     on_click=mostrar_carrinho
                 ),
-                ft.Button(
-                    content="Avançar",
-                    on_click=mostrar_selecao
-                )
+                botao_avancar
             ],
             alignment=ft.MainAxisAlignment.CENTER)
         ],
         expand=True)
 
-        page.update()
+        atualizar_carrinho()
 
     def calcular(e=None):
 
@@ -487,6 +550,10 @@ def main(page: ft.Page):
                 ft.Button(
                     content="Voltar",
                     on_click=mostrar_cardapio
+                ),
+                ft.Button(
+                    content="Remover Tudo",
+                    on_click=limpar_carrinho
                 ),
                 ft.Button(
                     content="Atualizar Carrinho",
