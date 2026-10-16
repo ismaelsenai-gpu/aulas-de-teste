@@ -1,4 +1,8 @@
+import asyncio
+import random
+from math import pi
 import flet as ft
+
 
 
 pizzas = [
@@ -71,37 +75,118 @@ def criar_cartao(pizza, selecionar):
 
 
 def main(page: ft.Page):
-
+    page.window.width = 360
+    page.window.height = 800
     page.title = "PizzaDev"
-    page.padding = 20
-    page.window.maximized = True
+    page.padding = 15
+    page.window.resizable = False
+    """page.window.maximized = True"""
 
-    titulo = ft.Text(
-        "PizzaDev",
-        size=40,
-        weight=ft.FontWeight.BOLD
+    tela_atual = 0
+
+    tamanho_quadrado = 7
+    espaco = 1
+    duracao_animacao = 1400
+
+    cores_letras = [
+        ft.Colors.PINK_500,
+        ft.Colors.AMBER_500,
+        ft.Colors.LIGHT_GREEN_500,
+        ft.Colors.DEEP_PURPLE_500,
+        ft.Colors.BLUE_500,
+        ft.Colors.DEEP_ORANGE_500,
+        ft.Colors.CYAN_500,
+        ft.Colors.RED_500,
+    ]
+
+    formatos_letras = [
+        [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (1, 0), (2, 0), (2, 1), (2, 2), (1, 2)],
+        [(0, 0), (1, 0), (2, 0), (1, 1), (1, 2), (1, 3), (0, 4), (1, 4), (2, 4)],
+        [(0, 0), (1, 0), (2, 0), (2, 1), (1, 2), (0, 3), (0, 4), (1, 4), (2, 4)],
+        [(0, 0), (1, 0), (2, 0), (2, 1), (1, 2), (0, 3), (0, 4), (1, 4), (2, 4)],
+        [(1, 0), (0, 1), (2, 1), (0, 2), (1, 2), (2, 2), (0, 3), (2, 3), (0, 4), (2, 4)],
+        [(0, 0), (1, 0), (0, 1), (2, 1), (0, 2), (2, 2), (0, 3), (2, 3), (0, 4), (1, 4)],
+        [(0, 0), (1, 0), (2, 0), (0, 1), (0, 2), (1, 2), (2, 2), (0, 3), (0, 4), (1, 4)],
+        [(0, 0), (2, 0), (0, 1), (2, 1), (0, 2), (2, 2), (0, 3), (2, 3), (1, 4)],
+    ]
+
+    pecas_logo = [
+        (indice_letra * 4 + x, y, cores_letras[indice_letra])
+        for indice_letra, formato in enumerate(formatos_letras)
+        for x, y in formato
+    ]
+
+    largura_logo = 31 * (tamanho_quadrado + espaco)
+    altura_logo = 5 * (tamanho_quadrado + espaco)
+
+    logo = ft.Stack(
+        width=largura_logo,
+        height=altura_logo,
+        animate_scale=duracao_animacao,
+        animate_opacity=duracao_animacao,
     )
 
-    carrinho = [
-        {
-            "nome": "Calabresa",
-            "tamanho": "M",
-            "quantidade": 1,
-            "preco": 32
-        },
-        {
-            "nome": "Pepperoni",
-            "tamanho": "G",
-            "quantidade": 2,
-            "preco": 42
-        },
-        {
-            "nome": "Muçarela",
-            "tamanho": "M",
-            "quantidade": 1,
-            "preco": 32
-        }
+    for _ in pecas_logo:
+        logo.controls.append(
+            ft.Container(
+                animate=duracao_animacao,
+                animate_position=duracao_animacao,
+                animate_rotation=duracao_animacao,
+            )
+        )
+
+    cores_sorteadas = [
+        ft.Colors.AMBER_400,
+        ft.Colors.BLUE_400,
+        ft.Colors.BROWN_400,
+        ft.Colors.CYAN_700,
+        ft.Colors.DEEP_ORANGE_500,
+        ft.Colors.INDIGO_600,
+        ft.Colors.PINK,
+        ft.Colors.RED_600,
+        ft.Colors.GREEN_400,
+        ft.Colors.TEAL_ACCENT_200,
+        ft.Colors.LIGHT_BLUE_500,
     ]
+
+    def espalhar_logo():
+        for peca in logo.controls:
+            tamanho = random.randrange(4, 15)
+            peca.left = random.randrange(0, largura_logo)
+            peca.top = random.randrange(0, altura_logo)
+            peca.bgcolor = random.choice(cores_sorteadas)
+            peca.width = tamanho
+            peca.height = tamanho
+            peca.border_radius = random.randrange(0, 4)
+            peca.rotate = random.randrange(0, 90) * 2 * pi / 360
+
+        logo.scale = 1.4
+        logo.opacity = 0.35
+
+    def montar_logo():
+        for indice, (esquerda, topo, cor) in enumerate(pecas_logo):
+            peca = logo.controls[indice]
+            peca.left = esquerda * (tamanho_quadrado + espaco)
+            peca.top = topo * (tamanho_quadrado + espaco)
+            peca.bgcolor = cor
+            peca.width = tamanho_quadrado
+            peca.height = tamanho_quadrado
+            peca.border_radius = 2
+            peca.rotate = 0
+
+        logo.scale = 1
+        logo.opacity = 1
+        page.update()
+
+    titulo = ft.Container(
+        content=logo,
+        width=300,
+        height=65,
+        alignment=ft.Alignment(0, 0),
+        visible=True,
+    )
+
+    carrinho = []
 
     estado = {
         "pizza": None,
@@ -184,7 +269,8 @@ def main(page: ft.Page):
 
     botao_avancar = ft.Button(
         content="Avançar",
-        disabled=not carrinho
+        disabled=not carrinho,
+        
     )
 
     def mostrar_snackbar(texto):
@@ -319,6 +405,7 @@ def main(page: ft.Page):
         )
 
     def mostrar_inicio(e=None):
+        titulo.visible = True
         area_central.content = ft.Container(
             content=ft.Column([
                 ft.Text(
@@ -349,6 +436,7 @@ def main(page: ft.Page):
         page.update()
 
     def mostrar_cardapio(e=None):
+        titulo.visible = False
         botao_avancar.on_click = mostrar_selecao
 
         area_central.content = ft.Column([
@@ -367,9 +455,11 @@ def main(page: ft.Page):
                     content="Voltar",
                     on_click=mostrar_inicio
                 ),
-                ft.Button(
-                    content="Carrinho",
+                ft.IconButton(
+                    icon=ft.Icons.SHOPPING_CART,
+                    tooltip="Carrinho",
                     on_click=mostrar_carrinho
+                
                 ),
                 botao_avancar
             ],
@@ -486,6 +576,7 @@ def main(page: ft.Page):
         atualizar_carrinho()
 
     def mostrar_selecao(e=None):
+        titulo.visible = False
 
         lista_selecao = ft.Column(
             scroll=ft.ScrollMode.AUTO,
@@ -611,11 +702,15 @@ def main(page: ft.Page):
                     on_click=calcular
                 ),
                 ft.Button(
-                    content="Carrinho",
-                    on_click=mostrar_carrinho
+                    ft.IconButton(
+                        icon=ft.Icons.SHOPPING_CART,
+                        tooltip="Carrinho",
+                        on_click=mostrar_carrinho)
+
                 ),
-                ft.Button(
-                    content="Início",
+                ft.IconButton(
+                    icon=ft.Icons.HOME,
+                    tooltip="Início",
                     on_click=mostrar_inicio
                 )
             ],
@@ -626,42 +721,53 @@ def main(page: ft.Page):
         page.update()
 
     def mostrar_carrinho(e=None):
+        titulo.visible = False
         atualizar_carrinho()
 
-        area_central.content = ft.Column([
-            ft.Text(
-                "Carrinho",
-                size=30,
-                weight=ft.FontWeight.BOLD
-            ),
-            lista_carrinho,
-            subtotal_carrinho,
-            mensagem,
-            ft.Row([
-                ft.Button(
-                    content="Voltar",
-                    on_click=mostrar_cardapio
+        area_central.content = ft.Column(
+            controls=[
+                ft.Row(
+                    controls=[
+                        ft.Text(
+                            "Meu carrinho",
+                            size=30,
+                            weight=ft.FontWeight.BOLD
+                        ),
+                        ft.TextButton(
+                            "Remover tudo",
+                            on_click=limpar_carrinho
+                        )
+                    ],
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN
                 ),
-                ft.Button(
-                    content="Remover Tudo",
-                    on_click=limpar_carrinho
+                ft.Container(
+                    content=lista_carrinho,
+                    expand=True
                 ),
-                ft.Button(
-                    content="Atualizar Carrinho",
-                    on_click=atualizar_carrinho
-                ),
-                ft.Button(
-                    content="Calcular Pedido",
-                    on_click=calcular
-                ),
-                ft.Button(
-                    content="Início",
-                    on_click=mostrar_inicio
+                ft.Container(
+                    content=ft.Column(
+                        controls=[
+                            subtotal_carrinho,
+                            mensagem,
+                            ft.Button(
+                                content="Continuar",
+                                on_click=mostrar_selecao,
+                                disabled=not carrinho
+                            ),
+                            ft.TextButton(
+                                "Voltar ao cardápio",
+                                on_click=mostrar_cardapio
+                            )
+                        ],
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        spacing=8
+                    ),
+                   
                 )
             ],
-            alignment=ft.MainAxisAlignment.CENTER)
-        ],
-        expand=True)
+            expand=True,
+            spacing=10
+        )
 
         page.update()
 
@@ -678,6 +784,14 @@ def main(page: ft.Page):
 
     atualizar_carrinho()
     mostrar_inicio()
+    espalhar_logo()
+    page.update()
+
+    async def animar_abertura():
+        await asyncio.sleep(0.2)
+        montar_logo()
+
+    page.run_task(animar_abertura)
 
 
 ft.run(main)
